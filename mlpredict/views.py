@@ -10,7 +10,6 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
-# Remove @csrf_exempt - we'll handle CSRF in the frontend
 def predict(request):
     if request.method != 'POST' or 'image' not in request.FILES:
         return JsonResponse({'error': 'No image provided'}, status=400)

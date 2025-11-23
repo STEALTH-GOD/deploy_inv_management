@@ -12,26 +12,39 @@
             <h5 class="mb-3">Filter Items</h5>
             <form method="POST" class="row g-3">
                 {% csrf_token %}
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         {{ form.item_name }}
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-tag"></i></span>
                         {{ form.brand }}
                     </div>
                 </div>
-                <div class="col-md-3">
-                    
+                <div class="col-md-2">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-tag"></i></span>
                         {{ form.category }}
                     </div>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
+                <div class="col-md-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        {{ form.date_from }}
+                    </div>
+                    <small class="text-muted">From Date</small>
+                </div>
+                <div class="col-md-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        {{ form.date_to }}
+                    </div>
+                    <small class="text-muted">To Date</small>
+                </div>
+                <div class="col-md-2 d-flex pb-5 align-items-end">
                     <div class="btn-group">
                         <button type="submit" class="btn btn-custom">
                             <i class="fas fa-filter"></i> Filter
@@ -44,25 +57,26 @@
             </form>
         </div>
     </div>
+    
     <!-- table -->
     <div class="inventory-table">
         <div class="table-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="h4 mb-0">{{ title }}</h2>
             </div>
+        </div>
         <div class="table-container">
             <table class="table custom-table table-hover">
                 <thead>
                     <tr>
                         <th scope="col">Item Name</th>
                         <th scope="col">Quantity</th>
-                        <th scope="col">Catergory</th>
+                        <th scope="col">Category</th>
                         <th scope="col">Issue Quantity</th>
                         <th scope="col">Receive Quantity</th>
                         <th scope="col">Supplier</th>
                         <th scope="col">Last Updated</th>
-                        <th scope="col">Action  </th>
-
+                        <th scope="col">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,22 +87,26 @@
                         <td>{{ instance.category }}</td>
                         <td>{{ instance.issue_quantity }}</td>
                         <td>{{ instance.receive_quantity }}</td>
-                        <td>{{ instance.receive_from }}</td>
+                        <td>
+                            {% if instance.supplier %}
+                                {{ instance.supplier.name }}
+                            {% else %}
+                                <span class="text-muted">No supplier</span>
+                            {% endif %}
+                        </td>
                         <td>{{ instance.last_updated }}</td>
                         <td>
-                            <form method="POST" action ="{% url 'delete_history' instance.id %}" style="display:inline;">
+                            <form method="POST" action="{% url 'delete_history' instance.id %}" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-link text-danger">
                                     <i class="fas fa-trash"></i> 
                                 </button>
                             </form>
-
                         </td>
-                        
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-4">
+                        <td colspan="8" class="text-center py-4">
                             <p class="text-muted mb-0">No items found</p>
                         </td>
                     </tr>
@@ -96,6 +114,48 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination -->
+        {% if queryset.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="text-muted">
+                Showing {{ queryset.start_index }} to {{ queryset.end_index }} of {{ queryset.paginator.count }} entries
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if queryset.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo; First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ queryset.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in queryset.paginator.page_range %}
+                        {% if queryset.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > queryset.number|add:'-3' and num < queryset.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if queryset.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ queryset.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ queryset.paginator.num_pages }}">Last &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock content %}

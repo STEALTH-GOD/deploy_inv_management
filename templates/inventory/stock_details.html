@@ -18,14 +18,14 @@
                 <!-- Details on the left -->
                 <div class="col-md-8">
                     <div class="mb-3 d-flex gap-2">
-                        <a href="{% url 'issue_items' stock.id %}" class="btn btn-danger">
+                        <a href="{% url 'issue_items' stock.id %}" class="btn"style="background-color: #DB5246; color: white; border-color: #DB5246;">
                             <i class="fas fa-minus-circle"></i> ISSUE THIS ITEM
                         </a>
-                        <a href="{% url 'receive_items' stock.id %}" class="btn btn-primary">
+                        <a href="{% url 'receive_items' stock.id %}" class="btn"style="background-color: #468CDB; color: white; border-color: #468CDB;">
                             <i class="fas fa-plus-circle"></i> RECEIVE THIS ITEM
                         </a>
                         <a href="{% url 'reorder_level' stock.id %}"
-                        class="btn btn-danger">REORDER
+                        class="btn"style="background-color: #078080; color: white; border-color: #078080;">REORDER LEVEL
                         </a>
                     </div>
 
@@ -57,7 +57,14 @@
                             </tr>
                             <tr>
                                 <th scope="row">Supplier</th>
-                                <td>{{ stock.receive_from }}, {{ stock.phone_number }}</td>
+
+                               <td>
+                                {% if stock.supplier %}
+                                    {{ stock.supplier.name }}{% if stock.supplier.phone_number %}, {{ stock.supplier.phone_number }}{% endif %}
+                                {% else %}
+                                    <span class="text-muted">No supplier</span>
+                                {% endif %}
+                            </td>
                             </tr>
                         </tbody>
                     </table>

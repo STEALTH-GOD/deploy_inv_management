@@ -1,4 +1,4 @@
-    {% extends 'base/base.html' %}
+{% extends 'base/base.html' %}
 {% load static %}
 
 {% block title %}Inventory Items{% endblock title %}
@@ -19,14 +19,12 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                   
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-tag"></i></span>
                         {{ form.brand }}
                     </div>
                 </div>
                 <div class="col-md-3">
-                    
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-tag"></i></span>
                         {{ form.category }}
@@ -45,6 +43,7 @@
             </form>
         </div>
     </div>
+    
     <!-- table -->
     <div class="inventory-table">
         <div class="table-header">
@@ -59,53 +58,152 @@
             <table class="table custom-table table-hover">
                 <thead>
                     <tr>
-                        <th scope="col">Item Name</th>
+                        <th scope="col">Image</th>
+                        <th scope="col">Item Details</th>
                         <th scope="col">Quantity</th>
-                        <th scope="col">Catergory</th>
                         <th scope="col">Price</th>
-                        <th scope="col">Brand</th>
+                        <th scope="col">Supplier</th>
                         <th scope="col">Last Updated</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for instance in queryset %}
-                    <tr>
-                        <td>{{ instance.item_name }}</td>
+                    <tr class="clickable-row" data-href="{% url 'stock_details' instance.id %}">
                         <td>
-                            {% if instance.quantity <= instance.reorder_level %}
-                            <div style="background-color: red; color: white;">{{instance.quantity}}</div>
-                            {% else %}{{instance.quantity}}
+                            {% if instance.image %}
+                                <img src="{{ instance.image.url }}" 
+                                alt="{{ instance.item_name }}" 
+                                class="product-thumbnail"
+                            {% else %}
+                                <div class="placeholder-image">
+                                    <i class="fas fa-image"></i>
+                                </div>
                             {% endif %}
                         </td>
-                        <td>{{ instance.category }}</td>
-                        <td>Rs.{{ instance.price }}</td>
-                        <td>{{ instance.brand }}</td>
-                        <td>{{ instance.last_updated }}</td>
                         <td>
+                            <div class="item-details">
+                                <h6 class="item-name mb-1">{{ instance.item_name }}</h6>
+                                <small class="text-muted">
+                                    <span class="badge bg-secondary me-1">{{ instance.category|default:"No Category" }}</span>
+                                    <span class="badge bg-info">{{ instance.brand|default:"No Brand" }}</span>
+                                </small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if instance.quantity <= instance.reorder_level %}
+                                <span class="badge bg-danger fs-6">{{ instance.quantity }}</span>
+                                <small class="text-danger d-block">Low Stock!</small>
+                            {% else %}
+                                <span class="badge bg-success fs-6">{{ instance.quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong class="text-success">रु  {{ instance.price|default:"0" }}</strong>
+                        </td>
+                        <td>
+                            {% if instance.supplier %}
+                                <div class="supplier-info">
+                                    <div class="fw-medium">{{ instance.supplier.name }}</div>
+                                    {% if instance.supplier.phone_number %}
+                                        <small class="text-muted">{{ instance.supplier.phone_number }}</small>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">No supplier</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ instance.last_updated|date:"M d, Y" }}</small>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ instance.last_updated|time:"g:i A" }}</div>
+                        </td>
+                        <td class="actions-column" onclick="event.stopPropagation();">
                             <div class="btn-group">
+                                <a href="{% url 'stock_details' instance.id %}" class="btn btn-sm btn-outline-info" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                                 <a href="{% url 'update_items' instance.id %}" class="btn btn-sm btn-outline-custom" title="Edit Item">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="{% url 'delete_items' instance.id %}" class="btn btn-sm btn-outline-danger" title="Delete Item">
                                     <i class="fas fa-trash"></i>
                                 </a>
-                                <a href="{% url 'stock_details' instance.id %}" class="btn btn-outline-success btn-sm" title="Restock">
-                                <i class="fa-solid fa-circle-info"></i>
-                                </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-4">
-                            <p class="text-muted mb-0">No items found</p>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="no-items">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted mb-0">No items found</p>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination -->
+        {% if queryset.has_other_pages %}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="text-muted">
+                Showing {{ queryset.start_index }} to {{ queryset.end_index }} of {{ queryset.paginator.count }} entries
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if queryset.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo; First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ queryset.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in queryset.paginator.page_range %}
+                        {% if queryset.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > queryset.number|add:'-3' and num < queryset.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if queryset.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ queryset.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ queryset.paginator.num_pages }}">Last &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
 </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Make table rows clickable
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    
+    clickableRows.forEach(function(row) {
+        row.addEventListener('click', function() {
+            window.location.href = this.dataset.href;
+        });
+        
+        // Add visual feedback
+        row.style.cursor = 'pointer';
+    });
+});
+</script>
+
 {% endblock content %}

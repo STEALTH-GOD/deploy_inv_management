@@ -3,6 +3,7 @@ from .models import Stock, StockHistory
 from .forms import * 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 # Create your views here.
 
 def home(request):
@@ -10,26 +11,30 @@ def home(request):
 
 @login_required
 def list_items(request):
-    title = "List of Items"
+    form = StockSearchForm(request.POST or None)
     queryset = Stock.objects.all()
-    form=StockSearchForm(request.POST or None)
-
-    if request.method == "POST":
-        if form.is_valid():
-            item_name= form.cleaned_data.get('item_name')
-            brand= form.cleaned_data.get('brand')
-            category= form.cleaned_data.get('category')
-
-            if item_name:
-                queryset= queryset.filter(item_name__icontains=item_name)
-            if brand:
-                queryset = queryset.filter(brand__icontains=brand)
-            if category:
-                queryset = queryset.filter(category__icontains=category)
-    context={
-    "title":title,
-    "queryset": queryset,
-    "form": form,
+    
+    if request.method == 'POST' and form.is_valid():
+        item_name = form.cleaned_data.get('item_name')
+        brand = form.cleaned_data.get('brand')
+        category = form.cleaned_data.get('category')
+        
+        if item_name:
+            queryset = queryset.filter(item_name__icontains=item_name)
+        if brand:
+            queryset = queryset.filter(brand__icontains=brand)
+        if category:
+            queryset = queryset.filter(category__icontains=category)
+    
+    # pagination
+    paginator = Paginator(queryset, 10)  # Show 10 items per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'form': form,
+        'queryset': page_obj,  # Use page_obj instead of queryset
+        'title': 'Inventory Items'
     }
     return render(request, 'inventory/list_items.html', context)
 
@@ -151,7 +156,7 @@ def receive_items(request, pk):
         "username": "Receive", 
         "is_receive_form": True  
     }
-    return render(request, 'inventory/issue_receive_items.html', context)  # Use a different template
+    return render(request, 'inventory/issue_receive_items.html', context)  
 
 
 @login_required
@@ -177,26 +182,41 @@ def reorder_level(request, pk):
     
 @login_required
 def list_history(request):
-    title = 'ITEMS HISTORY'
-    queryset = StockHistory.objects.all()
     form = StockSearchForm(request.POST or None)
+    queryset = StockHistory.objects.select_related('supplier').all()
+    
     if request.method == 'POST' and form.is_valid():
-        item_name=form.cleaned_data.get('item_name')
-        brand= form.cleaned_data.get('brand')
-        category= form.cleaned_data.get('category')
-
+        item_name = form.cleaned_data.get('item_name')
+        brand = form.cleaned_data.get('brand')
+        category = form.cleaned_data.get('category')
+        date_from = form.cleaned_data.get('date_from')
+        date_to = form.cleaned_data.get('date_to')
+        
         if item_name:
-            queryset=queryset.filter(item_name__icontains=item_name)
+            queryset = queryset.filter(item_name__icontains=item_name)
         if brand:
-            queryset=queryset.filter(brand__icontains=brand)
+            queryset = queryset.filter(brand__icontains=brand)
         if category:
-            queryset=queryset.filter(category__icontains=category)
+            queryset = queryset.filter(category__icontains=category)
+        if date_from:
+            queryset = queryset.filter(last_updated__date__gte=date_from)
+        if date_to:
+            queryset = queryset.filter(last_updated__date__lte=date_to)
+    
+    # Order by most recent first
+    queryset = queryset.order_by('-last_updated')
+    
+    #pagination
+    paginator = Paginator(queryset, 10)  # Show 10 items per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        "title": title,
-        "form": form,
-        "queryset":queryset,
+        'form': form,
+        'queryset': page_obj,  
+        'title': 'Inventory History'
     }
-    return render(request, "inventory/list_history.html", context)
+    return render(request, 'inventory/list_history.html', context)
 
 def delete_history(request, pk):
     history = get_object_or_404(StockHistory, pk=pk)

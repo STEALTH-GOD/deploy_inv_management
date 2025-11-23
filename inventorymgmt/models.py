@@ -1,6 +1,7 @@
 from django.db import models
 import os
 from django.dispatch import receiver
+from suppliers.models import Supplier
 
 # Create your models here.
 class Stock(models.Model):
@@ -11,17 +12,16 @@ class Stock(models.Model):
 	price = models.CharField(max_length=10, blank=False, null=True)
 	receive_quantity = models.IntegerField(default='0', blank=True, null=True)
 	receive_by = models.CharField(max_length=50, blank=True, null=True)
-	receive_from = models.CharField(max_length=50, blank=True, null=True)
 	issue_quantity = models.IntegerField(default='0', blank=True, null=True)
 	issue_by = models.CharField(max_length=50, blank=True, null=True)
 	issue_to = models.CharField(max_length=50, blank=True, null=True)
-	phone_number = models.CharField(max_length=50, blank=True, null=True)
 	created_by = models.CharField(max_length=50, blank=True, null=True)
 	reorder_level = models.IntegerField(default='0', blank=True, null=True)
 	timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 	last_updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 	image = models.ImageField(upload_to='product_images/', blank=True, null=True)
 	export_to_CSV = models.BooleanField(default=False)
+	supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, blank=True, null=True, related_name='stocks')
     
 	class Meta: 
 		constraints = [
@@ -44,15 +44,14 @@ class StockHistory(models.Model):
     price = models.CharField(max_length=10, blank=True, null=True)
     receive_quantity = models.IntegerField(blank=True, null=True)
     receive_by = models.CharField(max_length=50, blank=True, null=True)
-    receive_from = models.CharField(max_length=100, blank=True, null=True)
     issue_quantity = models.IntegerField(blank=True, null=True)
     issue_by = models.CharField(max_length=50, blank=True, null=True)
     issue_to = models.CharField(max_length=50, blank=True, null=True)
-    phone_number = models.CharField(max_length=50, blank=True, null=True)
     created_by = models.CharField(max_length=50, blank=True, null=True)
     reorder_level = models.IntegerField(blank=True, null=True)
     timestamp = models.DateTimeField(blank=True, null=True)
     last_updated = models.DateTimeField(blank=True, null=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, blank=True, null=True, related_name='stock_histories')
 
 
 

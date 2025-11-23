@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "crispy_bootstrap5",
     'widget_tweaks',
     'inventorymgmt',
+    'suppliers',
     'accounts',
     'mlpredict',
 ]
