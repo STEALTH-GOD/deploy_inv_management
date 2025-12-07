@@ -1,0 +1,170 @@
+{% extends 'base/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Sales List{% endblock title %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3"><i class="fas fa-list"></i> All Sales</h1>
+        <a href="{% url 'pos_page' %}" class="btn btn-custom">
+            <i class="fas fa-plus-circle"></i> New Sale (POS)
+        </a>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filter Sales</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" name="item_name" class="form-control" 
+                           placeholder="Search product..." value="{{ request.GET.item_name }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="date_from" class="form-control" 
+                           value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="date_to" class="form-control" 
+                           value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-custom">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{% url 'sales_list' %}" class="btn btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Sales</h6>
+                    <h3 class="text-success mb-0">रु {{ total_sales|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Items Sold</h6>
+                    <h3 class="text-info mb-0">{{ total_quantity }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Number of Transactions</h6>
+                    <h3 class="text-warning mb-0">{{ sales.paginator.count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Table -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0">Sales Records</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-active">
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Subtotal</th>
+                            <th>Sold By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>
+                                <small>{{ sale.sale_date|date:"M d, Y" }}<br>{{ sale.sale_date|time:"h:i A" }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ sale.stock.item_name }}</strong><br>
+                                <small class="text-muted">{{ sale.stock.brand|default:"N/A" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ sale.quantity_sold }}</span>
+                            </td>
+                            <td>रु {{ sale.selling_price|floatformat:2 }}</td>
+                            <td>
+                                <strong class="text-success">रु {{ sale.subtotal|floatformat:2 }}</strong>
+                            </td>
+                            <td>
+                                <small class="badge bg-secondary">{{ sale.sold_by }}</small>
+                            </td>
+                            <td>
+                                <a href="{% url 'delete_sale' sale.id %}" 
+                                   onclick="return confirm('Delete this sale? Stock will be restored.')" 
+                                   class="btn btn-sm btn-outline-danger" title="Delete Sale">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No sales found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if sales.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if sales.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in sales.paginator.page_range %}
+                        {% if sales.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > sales.number|add:'-3' and num < sales.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if sales.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales.paginator.num_pages }}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

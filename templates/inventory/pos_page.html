@@ -1,0 +1,353 @@
+{% extends 'base/base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}POS - Point of Sale{% endblock title %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4"><i class="fas fa-cash-register"></i> Point of Sale (POS)</h1>
+    
+    <div class="row">
+        <!-- Products Section (Left) -->
+        <div class="col-lg-8">
+            <!-- Search and Filter -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Search Products</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Search by name or brand..." value="{{ search_query }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat }}" {% if cat == category_filter %}selected{% endif %}>
+                                        {{ cat }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-custom">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{% url 'pos_page' %}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Products ({{ items.count }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for item in items %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="product-card border rounded p-3 cursor-pointer" 
+                                 onclick="selectProduct({{ item.id }}, '{{ item.item_name }}', {{ item.price }}, {{ item.quantity }})">
+                                <div class="text-center mb-2">
+                                    {% if item.image %}
+                                        <img src="{{ item.image.url }}" alt="{{ item.item_name }}" 
+                                             class="img-fluid" style="max-height: 120px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light p-4 rounded">
+                                            <i class="fas fa-box fa-3x text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <h6 class="mb-1 text-truncate">{{ item.item_name }}</h6>
+                                <small class="text-muted d-block">
+                                    {{ item.brand|default:"N/A" }}
+                                </small>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="badge bg-success">रु {{ item.price }}</span>
+                                    <span class="badge bg-info">{{ item.quantity }} in stock</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info text-center">
+                                <i class="fas fa-inbox"></i> No products available in selected category
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Cart (Right) -->
+        <div class="col-lg-4">
+            <!-- Add Sale Form -->
+            <div class="card shadow mb-4 sticky-top" style="top: 20px;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Add Sale</h5>
+                </div>
+                <div class="card-body">
+                    <form id="saleForm" method="POST" action="{% url 'add_sale' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="productSelect" class="form-label">Product</label>
+                            <select id="productSelect" name="stock" class="form-select" required onchange="updatePrice()">
+                                <option value="">-- Select Product --</option>
+                                {% for item in items %}
+                                    <option value="{{ item.id }}">{{ item.item_name }} ({{ item.quantity }} in stock)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="quantityInput" class="form-label">Quantity</label>
+                            <input type="number" id="quantityInput" name="quantity_sold" class="form-control" 
+                                   min="1" placeholder="Enter quantity" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="priceInput" class="form-label">Selling Price (रु)</label>
+                            <input type="number" id="priceInput" name="selling_price" class="form-control" 
+                                   step="0.01" placeholder="Enter price" required>
+                        </div>
+
+                        <div class="mb-3 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <span id="subtotal" class="fw-bold">रु 0.00</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-plus-circle"></i> Add to Sales
+                        </button>
+                    </form>
+
+                    <div id="formMessage" class="mt-3"></div>
+                </div>
+            </div>
+
+            <!-- Today's Summary -->
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Today's Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <small class="text-muted d-block">Total Sales</small>
+                                <h4 class="text-success mb-0">रु {{ today_total|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <small class="text-muted d-block">Items Sold</small>
+                                <h4 class="text-info mb-0">{{ today_quantity }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View All Sales Button -->
+            <a href="{% url 'sales_list' %}" class="btn btn-outline-primary w-100 mt-3">
+                <i class="fas fa-history"></i> View All Sales
+            </a>
+        </div>
+    </div>
+
+    <!-- Today's Sales Table -->
+    <div class="card shadow mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-receipt"></i> Today's Transactions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr class="table-active">
+                            <th>Time</th>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Subtotal</th>
+                            <th>Sold By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales_today %}
+                        <tr>
+                            <td>
+                                <small>{{ sale.sale_date|time:"h:i A" }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ sale.stock.item_name }}</strong><br>
+                                <small class="text-muted">{{ sale.stock.brand|default:"N/A" }}</small>
+                            </td>
+                            <td>{{ sale.quantity_sold }}</td>
+                            <td>रु {{ sale.selling_price|floatformat:2 }}</td>
+                            <td class="text-success fw-bold">रु {{ sale.subtotal|floatformat:2 }}</td>
+                            <td><small class="badge bg-secondary">{{ sale.sold_by }}</small></td>
+                            <td>
+                                <a href="{% url 'delete_sale' sale.id %}" 
+                                   onclick="return confirm('Delete this sale?')" 
+                                   class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p>No sales today yet</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if sales_today.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if sales_today.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales_today.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in sales_today.paginator.page_range %}
+                        {% if sales_today.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > sales_today.number|add:'-3' and num < sales_today.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if sales_today.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales_today.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ sales_today.paginator.num_pages }}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .product-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+        border-color: var(--bs-primary) !important;
+    }
+    
+    .sticky-top {
+        z-index: 10;
+    }
+</style>
+
+<script>
+    // Calculate subtotal in real-time
+    document.getElementById('quantityInput').addEventListener('input', calculateSubtotal);
+    document.getElementById('priceInput').addEventListener('input', calculateSubtotal);
+
+    function calculateSubtotal() {
+        const quantity = parseFloat(document.getElementById('quantityInput').value) || 0;
+        const price = parseFloat(document.getElementById('priceInput').value) || 0;
+        const subtotal = quantity * price;
+        document.getElementById('subtotal').textContent = 'रु ' + subtotal.toFixed(2);
+    }
+
+    function selectProduct(productId, productName, price, stock) {
+        document.getElementById('productSelect').value = productId;
+        document.getElementById('priceInput').value = price;
+        document.getElementById('quantityInput').value = 1;
+        document.getElementById('quantityInput').focus();
+        calculateSubtotal();
+    }
+
+    function updatePrice() {
+        const productId = document.getElementById('productSelect').value;
+        if (!productId) {
+            document.getElementById('priceInput').value = '';
+            return;
+        }
+
+        fetch(`/get-product-price/${productId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('priceInput').value = data.price;
+                    document.getElementById('quantityInput').value = 1;
+                    calculateSubtotal();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Submit form via AJAX
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        
+        fetch('{% url "add_sale" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('formMessage').innerHTML = 
+                    `<div class="alert alert-success">✓ ${data.message}</div>`;
+                
+                // Reset form
+                document.getElementById('saleForm').reset();
+                document.getElementById('subtotal').textContent = 'रु 0.00';
+                
+                // Reload page to update sales table
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                document.getElementById('formMessage').innerHTML = 
+                    `<div class="alert alert-danger">✗ Error: Check form fields</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('formMessage').innerHTML = 
+                `<div class="alert alert-danger">✗ Error submitting sale</div>`;
+        });
+    });
+</script>
+
+{% endblock content %}

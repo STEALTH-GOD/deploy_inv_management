@@ -49,9 +49,14 @@
         <div class="table-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="h4 mb-0">{{ title }}</h2>
-                <a href="{% url 'add_items' %}" class="btn btn-custom btn-sm">
-                    <i class="fas fa-plus"></i> Add New Item
-                </a>
+                <div class="btn-group">
+                    <a href="{% url 'export_to_csv' %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-csv"></i> Export to CSV
+                    </a>
+                    <a href="{% url 'add_items' %}" class="btn btn-custom btn-sm">
+                        <i class="fas fa-plus"></i> Add New Item
+                    </a>
+                </div>
             </div>
         </div>
         <div class="table-container">
@@ -71,7 +76,11 @@
                     {% for instance in queryset %}
                     <tr class="clickable-row" data-href="{% url 'stock_details' instance.id %}">
                         <td>
-                            {% if instance.image %}
+                            {% if instance.image_url %}
+                                <img src="{{ instance.image_url }}" 
+                                alt="{{ instance.item_name }}" 
+                                class="product-thumbnail"
+                            {% elif instance.image %}
                                 <img src="{{ instance.image.url }}" 
                                 alt="{{ instance.item_name }}" 
                                 class="product-thumbnail"

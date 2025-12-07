@@ -9,7 +9,7 @@
     </a>
     <!-- Hamburger for mobile -->
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" style="border-color: #078080;">
       <span class="navbar-toggler-icon"></span>
     </button>
     <!-- Nav links -->
@@ -23,6 +23,12 @@
         </li>
         <li class="nav-item">
           <a class="nav-link fw-semibold" href="{% url 'list_items' %}" style="color:#232b39;">List Items</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link fw-semibold" href="{% url 'pos_page' %}" style="color:#232b39;"><i class="fas fa-cash-register"></i> POS</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link fw-semibold" href="{% url 'sales_list' %}" style="color:#232b39;">Sales</a>
         </li>
         <li class="nav-item">
           <a class="nav-link fw-semibold" href="{% url 'suppliers:supplier_list' %}" style="color:#232b39;">List Suppliers</a>
@@ -52,3 +58,14 @@
     </div>
   </div>
 </nav>
+
+<style>
+  /* Custom hamburger icon color */
+  .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23078080' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  }
+  
+  .navbar-toggler:focus {
+    box-shadow: 0 0 0 0.25rem rgba(7, 128, 128, 0.25);
+  }
+</style>

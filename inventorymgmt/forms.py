@@ -1,5 +1,5 @@
 from django import forms
-from .models import Stock
+from .models import Stock, Sale
 from suppliers.models import Supplier
 
 
@@ -8,7 +8,7 @@ class StockCreateForm(forms.ModelForm):
     
     class Meta:
         model = Stock
-        fields = ['item_name', 'quantity', 'category', 'brand', 'price', 'reorder_level','supplier_name', 'image','export_to_CSV']
+        fields = ['item_name', 'quantity', 'category', 'brand', 'price', 'reorder_level','supplier_name', 'image', 'export_to_CSV']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -79,3 +79,63 @@ class ReorderLevelForm(forms.ModelForm):
         model=Stock
         fields=['reorder_level']
 
+
+class SaleForm(forms.ModelForm):
+	"""Form to add a new sale"""
+	class Meta:
+		model = Sale
+		fields = ['stock', 'quantity_sold', 'selling_price']
+		widgets = {
+			'stock': forms.Select(attrs={
+				'class': 'form-control',
+				'id': 'stock-select'
+			}),
+			'quantity_sold': forms.NumberInput(attrs={
+				'class': 'form-control',
+				'type': 'number',
+				'min': '1',
+				'placeholder': 'Enter quantity',
+				'id': 'quantity-input'
+			}),
+			'selling_price': forms.NumberInput(attrs={
+				'class': 'form-control',
+				'type': 'number',
+				'step': '0.01',
+				'placeholder': 'Enter selling price',
+				'id': 'price-input'
+			})
+		}
+	
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		# Only show items with quantity > 0
+		self.fields['stock'].queryset = Stock.objects.filter(quantity__gt=0).order_by('item_name')
+		self.fields['stock'].label = 'Product'
+		self.fields['quantity_sold'].label = 'Quantity'
+		self.fields['selling_price'].label = 'Selling Price'
+	
+	def clean(self):
+		cleaned_data = super().clean()
+		stock = cleaned_data.get('stock')
+		quantity = cleaned_data.get('quantity_sold')
+		
+		if stock and quantity and quantity > stock.quantity:
+			raise forms.ValidationError(f"Only {stock.quantity} items in stock!")
+		
+		return cleaned_data
+
+
+class SaleFilterForm(forms.Form):
+	"""Form to filter sales by date and item"""
+	item_name = forms.CharField(required=False, widget=forms.TextInput(attrs={
+		'class': 'form-control',
+		'placeholder': 'Search item name...'
+	}))
+	date_from = forms.DateField(required=False, widget=forms.DateInput(attrs={
+		'class': 'form-control',
+		'type': 'date'
+	}))
+	date_to = forms.DateField(required=False, widget=forms.DateInput(attrs={
+		'class': 'form-control',
+		'type': 'date'
+	}))

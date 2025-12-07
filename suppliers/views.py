@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 def supplier_list(request):
-    suppliers = Supplier.objects.all()
+    suppliers = Supplier.objects.prefetch_related('stocks').all()
     return render(request, 'suppliers/supplier_list.html', {'suppliers': suppliers})
 
 def supplier_create(request):
