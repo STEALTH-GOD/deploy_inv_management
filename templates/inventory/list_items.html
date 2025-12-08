@@ -76,14 +76,10 @@
                     {% for instance in queryset %}
                     <tr class="clickable-row" data-href="{% url 'stock_details' instance.id %}">
                         <td>
-                            {% if instance.image_url %}
-                                <img src="{{ instance.image_url }}" 
+                            {% if instance.image %}
+                                <img src="{{ instance.image }}" 
                                 alt="{{ instance.item_name }}" 
-                                class="product-thumbnail"
-                            {% elif instance.image %}
-                                <img src="{{ instance.image.url }}" 
-                                alt="{{ instance.item_name }}" 
-                                class="product-thumbnail"
+                                class="product-thumbnail">
                             {% else %}
                                 <div class="placeholder-image">
                                     <i class="fas fa-image"></i>

@@ -4,6 +4,12 @@ from django.dispatch import receiver
 from suppliers.models import Supplier
 from .utils import compress_image
 
+# Supabase import (conditional to avoid import errors during development)
+try:
+    from .supabase_storage import SupabaseStorage
+except ImportError:
+    SupabaseStorage = None
+
 class Stock(models.Model):
 	item_name = models.CharField(max_length=50, blank=False, null=False, db_index=True)
 	quantity = models.IntegerField(default='0', blank=False, null=False)
@@ -19,7 +25,7 @@ class Stock(models.Model):
 	reorder_level = models.IntegerField(default='0', blank=True, null=True)
 	timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 	last_updated = models.DateTimeField(auto_now_add=False, auto_now=True)
-	image = models.ImageField(upload_to='product_images/', blank=True, null=True)
+	image = models.URLField(max_length=500, blank=True, null=True, help_text="Supabase CDN URL for product image")
 	export_to_CSV = models.BooleanField(default=False)
 	supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, blank=True, null=True, related_name='stocks')
 	
@@ -30,13 +36,6 @@ class Stock(models.Model):
 				name='unique_stock'
 			)
 		]
-	
-	def save(self, *args, **kwargs):
-		"""Override save to compress images before saving"""
-		if self.image and hasattr(self.image, 'file'):
-			# Compress image on upload
-			self.image = compress_image(self.image)
-		super().save(*args, **kwargs)
 	
 	def __str__(self):
 		return self.item_name
@@ -66,10 +65,17 @@ class StockHistory(models.Model):
 
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     """
-    Deletes file from filesystem when corresponding `Stock` object is deleted.
+    Deletes image from Supabase when corresponding `Stock` object is deleted.
     """
-    if instance.image and os.path.isfile(instance.image.path):
-        os.remove(instance.image.path)
+    if instance.image and SupabaseStorage:
+        # Extract filename from Supabase URL
+        try:
+            supabase = SupabaseStorage()
+            # Get filename from URL (last part after /)
+            filename = instance.image.split('/')[-1]
+            supabase.delete_image(filename)
+        except Exception as e:
+            print(f"Error deleting image from Supabase: {e}")
 
 # Connect the function to post_delete signal
 @receiver(models.signals.post_delete, sender=Stock)
@@ -80,21 +86,26 @@ def auto_delete_file_on_delete_handler(sender, instance, **kwargs):
 @receiver(models.signals.pre_save, sender=Stock)
 def auto_delete_file_on_change(sender, instance, **kwargs):
     """
-    Deletes old file from filesystem when `Stock` object is updated with new file.
+    Deletes old file from Supabase when `Stock` object is updated with new file.
     """
-    if not instance.pk:
+    if not instance.pk or not SupabaseStorage:
         return False
 
     try:
-        old_file = Stock.objects.get(pk=instance.pk).image
+        old_instance = Stock.objects.get(pk=instance.pk)
+        old_image = old_instance.image
     except Stock.DoesNotExist:
         return False
 
-    new_file = instance.image
-    if not old_file == new_file:
-        if old_file and os.path.isfile(old_file.path):
-            os.remove(old_file.path)
-
+    new_image = instance.image
+    if old_image and old_image != new_image:
+        try:
+            supabase = SupabaseStorage()
+            # Get filename from Supabase URL
+            filename = old_image.split('/')[-1]
+            supabase.delete_image(filename)
+        except Exception as e:
+            print(f"Error deleting old image from Supabase: {e}")
 
 class Sale(models.Model):
 	"""Model to track individual sales transactions"""

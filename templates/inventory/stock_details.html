@@ -72,8 +72,8 @@
 
                 <!-- Image on the right -->
                 <div class="col-md-4 mt-5 text-center">
-                    {% if stock.image_url or stock.image %}
-                        <img src="{% if stock.image_url %}{{ stock.image_url }}{% else %}{{ stock.image.url }}{% endif %}" alt="{{ stock.item_name }}"
+                    {% if stock.image %}
+                        <img src="{{ stock.image }}" alt="{{ stock.item_name }}"
                              class="img-fluid rounded shadow-sm mb-2"
                              style="cursor:pointer; max-height: 250px;"
                              data-bs-toggle="modal" data-bs-target="#imageModal">
@@ -91,8 +91,8 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content bg-transparent border-0">
             <div class="modal-body text-center">
-                {% if stock.image_url or stock.image %}
-                    <img src="{% if stock.image_url %}{{ stock.image_url }}{% else %}{{ stock.image.url }}{% endif %}" alt="{{ stock.item_name }}"
+                {% if stock.image %}
+                    <img src="{{ stock.image }}" alt="{{ stock.item_name }}"
                          class="img-fluid rounded shadow">
                 {% endif %}
             </div>

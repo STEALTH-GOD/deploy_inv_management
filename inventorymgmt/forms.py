@@ -1,14 +1,30 @@
 from django import forms
 from .models import Stock, Sale
 from suppliers.models import Supplier
+import uuid
+import logging
+
+# Conditional import to avoid errors if supabase not installed
+try:
+    from .supabase_storage import SupabaseStorage
+except ImportError:
+    SupabaseStorage = None
+
+logger = logging.getLogger(__name__)
 
 
 class StockCreateForm(forms.ModelForm):
     supplier_name = forms.CharField(label="Supplier", required=False)
+    # Use CharField for image field in form (we'll handle upload separately)
+    image = forms.FileField(required=False, widget=forms.FileInput(attrs={
+        'class': 'form-control',
+        'accept': 'image/*',
+        'id': 'image-input'
+    }))
     
     class Meta:
         model = Stock
-        fields = ['item_name', 'quantity', 'category', 'brand', 'price', 'reorder_level','supplier_name', 'image', 'export_to_CSV']
+        fields = ['item_name', 'quantity', 'category', 'brand', 'price', 'reorder_level','supplier_name', 'export_to_CSV']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,9 +41,52 @@ class StockCreateForm(forms.ModelForm):
         name = self.cleaned_data.get('supplier_name', '').strip()
         return name if name else None
 
+    def clean_image(self):
+        """Validate image file"""
+        image = self.cleaned_data.get('image')
+        if image:
+            # Validate file size (max 5MB)
+            if image.size > 5 * 1024 * 1024:
+                raise forms.ValidationError("Image file is too large. Max size is 5MB.")
+            
+            # Validate image format by checking content type
+            if not image.content_type.startswith('image/'):
+                raise forms.ValidationError("Please upload a valid image file.")
+        return image
+
     def save(self, commit=True):
+        # Save without image first (since it's not in fields)
         stock = super().save(commit=False)
         supplier_name = self.cleaned_data.get('supplier_name')
+        image_file = self.cleaned_data.get('image')
+        
+        # Handle Supabase image upload
+        if image_file:
+            try:
+                print(f"\n🔄 Processing image upload in form...")
+                supabase = SupabaseStorage()
+                
+                # Generate unique filename
+                filename = f"product_{uuid.uuid4()}_{image_file.name}"
+                print(f"  Generated filename: {filename}")
+                
+                # Upload to Supabase and get public URL
+                image_url = supabase.upload_image(image_file, filename)
+                
+                if image_url:
+                    stock.image = image_url
+                    print(f"  ✅ Image URL saved to model: {image_url}\n")
+                else:
+                    print(f"  ❌ Upload returned None\n")
+                    raise forms.ValidationError("Failed to upload image to Supabase. Please try again.")
+            except forms.ValidationError:
+                raise
+            except Exception as e:
+                print(f"  ❌ Exception during upload: {str(e)}\n")
+                raise forms.ValidationError(f"Error uploading image: {str(e)}")
+        else:
+            print(f"  ℹ️ No image provided")
+            stock.image = None
         
         if supplier_name:
             supplier, created = Supplier.objects.get_or_create(name=supplier_name)
@@ -37,6 +96,7 @@ class StockCreateForm(forms.ModelForm):
             
         if commit:
             stock.save()
+            print(f"  ✅ Stock saved to database with image URL\n")
         return stock
 
 

@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-uw_ac!7dlw0y1!$%4+w3*%-b2h_q3ub(*4nbhhj=((nhu1&wi7'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-uw_ac!7dlw0y1!$%4+w3*%-b2h_q3ub(*4nbhhj=((nhu1&wi7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Set to False in production
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -89,18 +93,19 @@ WSGI_APPLICATION = 'djangoproject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'railway',
-        'USER': 'postgres',
-        'PASSWORD': 'MKbzhDGAbVbykPBCDIYyxVRpQTQuDERn',
-        'HOST': 'caboose.proxy.rlwy.net',
-        'PORT':'59885',
-        'CONN_MAX_AGE': 600,  # Keep database connections alive for 10 minutes
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.getenv('DB_NAME', 'railway'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 600,
         'OPTIONS': {
             'connect_timeout': 10,
         }
     }
 }
+
 
 
 # Password validation
@@ -147,6 +152,24 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# ==========================================
+# SUPABASE CONFIGURATION
+# ==========================================
+SUPABASE_URL = os.getenv('SUPABASE_URL', '')
+SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')
+SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+SUPABASE_BUCKET_NAME = os.getenv('SUPABASE_BUCKET_NAME', 'inv_management')
+
+# ==========================================
+# SECURITY SETTINGS
+# ==========================================
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() == 'true'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

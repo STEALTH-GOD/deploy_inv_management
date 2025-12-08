@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.Python
+.venv
+venv/
+ENV/
+env/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local files
+*.sqlite3
+db.sqlite3
+local_settings.py
+
+# Media (images handled by Supabase)
+/media/
+/product_images/
+
+# Logs
+*.log
+*.pot
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+*.cache
+
+# Build
+/build/
+/dist/
+*.egg
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Documentation
+docs/_build/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
