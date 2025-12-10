@@ -32,6 +32,9 @@ def list_items(request):
         if category:
             queryset = queryset.filter(category__icontains=category)
     
+    # Order by item name to avoid pagination warning
+    queryset = queryset.order_by('item_name')
+    
     # pagination
     paginator = Paginator(queryset, 10)  # Show 10 items per page
     page_number = request.GET.get('page')
@@ -491,9 +494,10 @@ def delete_sale(request, pk):
 	sale = get_object_or_404(Sale, id=pk)
 	
 	if request.method == 'POST':
-		# Restore stock
-		sale.stock.quantity += sale.quantity_sold
-		sale.stock.save()
+		# Restore stock if it exists (handle SET_NULL case)
+		if sale.stock:
+			sale.stock.quantity += sale.quantity_sold
+			sale.stock.save()
 		
 		# Delete sale
 		sale.delete()
