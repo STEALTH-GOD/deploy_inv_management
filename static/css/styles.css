@@ -253,7 +253,18 @@ input.form-control:focus {
 }
 
 /* Responsive adjustments */
+
+@media (max-width: 480px) {
+  .logo-section {
+    display: none !important;
+  }
+}
+
 @media (max-width: 768px) {
+  .logo-section {
+    display: none !important;
+  }
+
   .product-thumbnail {
     width: 45px;
     height: 45px;
