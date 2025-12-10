@@ -109,12 +109,13 @@ def auto_delete_file_on_change(sender, instance, **kwargs):
 
 class Sale(models.Model):
 	"""Model to track individual sales transactions"""
-	stock = models.ForeignKey(Stock, on_delete=models.PROTECT, related_name='sales')
+	stock = models.ForeignKey(Stock, on_delete=models.SET_NULL,null=True,blank=True, related_name='sales')
 	quantity_sold = models.IntegerField(default=1, blank=False, null=False)
 	selling_price = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
 	subtotal = models.DecimalField(max_digits=15, decimal_places=2, blank=False, null=False)
 	sold_by = models.CharField(max_length=50, blank=True, null=True)
 	sale_date = models.DateTimeField(auto_now_add=True)
+    
 	
 	class Meta:
 		ordering = ['-sale_date']
