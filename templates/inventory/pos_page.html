@@ -58,7 +58,7 @@
                                  onclick="selectProduct({{ item.id }}, '{{ item.item_name }}', {{ item.price }}, {{ item.quantity }})">
                                 <div class="text-center mb-2">
                                     {% if item.image %}
-                                        <img src="{{ item.image.url }}" alt="{{ item.item_name }}" 
+                                        <img src="{{ item.image }}" alt="{{ item.item_name }}" 
                                              class="img-fluid" style="max-height: 120px; object-fit: cover;">
                                     {% else %}
                                         <div class="bg-light p-4 rounded">
@@ -71,7 +71,7 @@
                                     {{ item.brand|default:"N/A" }}
                                 </small>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <span class="badge bg-success">रु {{ item.price }}</span>
+                                    <span class="badge bg-success"> {{ item.price }}</span>
                                     <span class="badge bg-info">{{ item.quantity }} in stock</span>
                                 </div>
                             </div>
