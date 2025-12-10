@@ -60,23 +60,34 @@ def add_items(request):
     if request.method == "POST":
         form = StockCreateForm(request.POST, request.FILES)
         if form.is_valid():
-            item=form.save()
+            item = form.save()
+            
+            # Create history record for item creation
+            StockHistory.objects.create(
+                stock_id=item.id,
+                item_name=item.item_name,
+                quantity=item.quantity,
+                category=item.category,
+                brand=item.brand,
+                price=item.price,
+                created_by=request.user.username,
+                supplier=item.supplier,
+                last_updated=item.last_updated,
+                timestamp=item.last_updated
+            )
+            
             messages.success(request, f'{item.item_name} has been added successfully')
-            return redirect('list_items')  # Redirect after successful form submission
+            return redirect('list_items')
         else:
-            # Print errors to console for debugging
             print("\n❌ FORM VALIDATION FAILED:")
             print(f"Form errors: {form.errors}")
             print(f"Non-field errors: {form.non_field_errors()}")
-            for field, errors in form.errors.items():
-                print(f"  {field}: {errors}")
-            messages.error(request, "Form validation failed. Please check your inputs.")
     else:
-        form = StockCreateForm()  # Create blank form for GET request
+        form = StockCreateForm()
     
     context = {
-        "form": form,
-        "title": "Add Item"
+        'form': form,
+        'title': 'Add Item'
     }
     return render(request, 'inventory/add_items.html', context)
 
@@ -131,22 +142,39 @@ def issue_items(request, pk):
     form = IssueForm(request.POST or None, instance=queryset)
     if form.is_valid():
         instance = form.save(commit=False)
-        instance.receive_quantity=0
-        # Reset the issue_quantity field after saving to prevent old values persisting
+        instance.receive_quantity = 0
         old_issue_quantity = instance.issue_quantity
-        instance.quantity -= old_issue_quantity 
-        # instance.issue_quantity = 0  # Reset the field
-        messages.success(request, "Issued SUCCESSFULLY. " + str(instance.quantity) + " " + str(instance.item_name) + "s now left in Store")
+        instance.quantity -= old_issue_quantity
+        
+        # Create history record
+        StockHistory.objects.create(
+            stock_id=instance.id,
+            item_name=instance.item_name,
+            quantity=instance.quantity,
+            category=instance.category,
+            brand=instance.brand,
+            price=instance.price,
+            issue_quantity=old_issue_quantity,
+            issue_by=request.user.username,
+            issue_to=form.cleaned_data.get('issue_to', ''),
+            supplier=instance.supplier,
+            last_updated=instance.last_updated,
+            timestamp=instance.last_updated
+        )
+        
+        messages.success(request, f"Issued SUCCESSFULLY. {instance.quantity} {instance.item_name}s now left in Store")
         instance.save()
-        return redirect('/stock_details/'+str(instance.id))
+        return redirect(f'/stock_details/{instance.id}')
+    
     context = {
-        "title": "Issue " + queryset.item_name,
+        "title": f"Issue {queryset.item_name}",
         "queryset": queryset,
         "form": form,
-        "username": "Issue",  # Add this to differentiate from add_items
-        "is_issue_form": True  # Flag to identify this is an issue form
+        "username": "Issue",
+        "is_issue_form": True
     }
-    return render(request, 'inventory/issue_receive_items.html', context)  # Use a different template
+    return render(request, 'inventory/issue_receive_items.html', context)
+
 
 @login_required
 def receive_items(request, pk):
@@ -154,21 +182,35 @@ def receive_items(request, pk):
     form = ReceiveForm(request.POST or None, instance=queryset)
     if form.is_valid():
         instance = form.save(commit=False)
-        instance.issue_quantity=0
-        # Reset the receive_quantity field after saving to prevent old values persisting
+        instance.issue_quantity = 0
         old_receive_quantity = instance.receive_quantity
         instance.quantity += old_receive_quantity
-        # instance.receive_quantity = 0  # Reset the field
-        messages.success(request, "Received Successfully. " + str(instance.quantity) + " " + str(instance.item_name) + "s now in Store")
+        
+        # Create history record
+        StockHistory.objects.create(
+            stock_id=instance.id,
+            item_name=instance.item_name,
+            quantity=instance.quantity,
+            category=instance.category,
+            brand=instance.brand,
+            price=instance.price,
+            receive_quantity=old_receive_quantity,
+            receive_by=request.user.username,
+            supplier=instance.supplier,
+            last_updated=instance.last_updated,
+            timestamp=instance.last_updated
+        )
+        
+        messages.success(request, f"Received Successfully. {instance.quantity} {instance.item_name}s now in Store")
         instance.save()
-        return redirect('/stock_details/' + str(instance.id))
+        return redirect(f'/stock_details/{instance.id}')
 
     context = {
-        "title": "Receive " + queryset.item_name,
+        "title": f"Receive {queryset.item_name}",
         "queryset": queryset,
         "form": form,
-        "username": "Receive", 
-        "is_receive_form": True  
+        "username": "Receive",
+        "is_receive_form": True
     }
     return render(request, 'inventory/issue_receive_items.html', context)  
 
