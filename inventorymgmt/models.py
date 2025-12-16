@@ -1,6 +1,7 @@
 from django.db import models
 import os
 from django.dispatch import receiver
+from django.contrib.auth.models import User
 from suppliers.models import Supplier
 from .utils import compress_image
 
@@ -28,6 +29,7 @@ class Stock(models.Model):
 	image = models.URLField(max_length=500, blank=True, null=True, help_text="Supabase CDN URL for product image")
 	export_to_CSV = models.BooleanField(default=False)
 	supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, blank=True, null=True, related_name='stocks')
+	added_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='added_stocks', help_text="User who added this stock item")
 	
 	class Meta: 
 		constraints = [

@@ -18,13 +18,21 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('suppliers/', include('suppliers.urls')),
     path('accounts/', include('accounts.urls')),
     path('', include('inventorymgmt.urls')),
-    # path('ml/',include('mlpredict.urls')),  # Commented out - mlpredict app not installed
 ] 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# During development, let Django's staticfiles app serve files from
+# the app/static and project `static/` directories.
+if settings.DEBUG:
+    urlpatterns += staticfiles_urlpatterns()
+else:
+    # In production static files should be served by the web server
+    # and `collectstatic` should populate `STATIC_ROOT`.
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -63,12 +63,20 @@
         <div class="table-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="h4 mb-0">{{ title }}</h2>
+                <button type="button" class="btn btn-danger btn-sm" id="deleteSelectedBtn" onclick="deleteSelected()" disabled>
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
             </div>
         </div>
+        <form method="POST" action="{% url 'bulk_delete_history' %}" id="bulkDeleteForm">
+            {% csrf_token %}
         <div class="table-container">
             <table class="table custom-table table-hover">
                 <thead>
                     <tr>
+                        <th scope="col" style="width: 50px;">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                        </th>
                         <th scope="col">Item Name</th>
                         <th scope="col">Quantity</th>
                         <th scope="col">Category</th>
@@ -82,6 +90,9 @@
                 <tbody>
                     {% for instance in queryset %}
                     <tr>
+                        <td>
+                            <input type="checkbox" name="history_ids" value="{{ instance.id }}" class="history-checkbox" onchange="updateDeleteButton()">
+                        </td>
                         <td>{{ instance.item_name }}</td>
                         <td>{{ instance.quantity }}</td>
                         <td>{{ instance.category }}</td>
@@ -106,7 +117,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="9" class="text-center py-4">
                             <p class="text-muted mb-0">No items found</p>
                         </td>
                     </tr>
@@ -114,6 +125,7 @@
                 </tbody>
             </table>
         </div>
+        </form>
         
         <!-- Pagination -->
         {% if queryset.has_other_pages %}
@@ -158,4 +170,38 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+// Toggle all checkboxes
+function toggleSelectAll(source) {
+    const checkboxes = document.querySelectorAll('.history-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = source.checked;
+    });
+    updateDeleteButton();
+}
+
+// Update delete button state based on selections
+function updateDeleteButton() {
+    const checkboxes = document.querySelectorAll('.history-checkbox:checked');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const selectAll = document.getElementById('selectAll');
+    
+    deleteBtn.disabled = checkboxes.length === 0;
+    
+    // Update "Select All" checkbox state
+    const allCheckboxes = document.querySelectorAll('.history-checkbox');
+    selectAll.checked = allCheckboxes.length > 0 && checkboxes.length === allCheckboxes.length;
+}
+
+// Submit bulk delete form with confirmation
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.history-checkbox:checked');
+    if (checkboxes.length > 0) {
+        if (confirm(`Are you sure you want to delete ${checkboxes.length} history entries? This action cannot be undone.`)) {
+            document.getElementById('bulkDeleteForm').submit();
+        }
+    }
+}
+</script>
 {% endblock content %}

@@ -66,6 +66,16 @@
                                 {% endif %}
                             </td>
                             </tr>
+                            <tr>
+                                <th scope="row">Added By</th>
+                                <td>
+                                    {% if stock.added_by %}
+                                        <span class="badge bg-info text-dark">{{ stock.added_by.username }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Unknown</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

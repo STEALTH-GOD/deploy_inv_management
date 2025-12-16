@@ -12,6 +12,7 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal
 # Create your views here.
 
+@login_required
 def home(request):
     return render(request, 'inventory/home.html')
 
@@ -63,7 +64,9 @@ def add_items(request):
     if request.method == "POST":
         form = StockCreateForm(request.POST, request.FILES)
         if form.is_valid():
-            item = form.save()
+            item = form.save(commit=False)
+            item.added_by = request.user  # Set the user who added this item
+            item.save()
             
             # Create history record for item creation
             StockHistory.objects.create(
@@ -277,11 +280,24 @@ def list_history(request):
     }
     return render(request, 'inventory/list_history.html', context)
 
+@login_required
 def delete_history(request, pk):
     history = get_object_or_404(StockHistory, pk=pk)
     if request.method == "POST":
         history.delete()
         messages.success(request, "History entry deleted successfully.")
+    return redirect('list_history')
+
+@login_required
+def bulk_delete_history(request):
+    """Delete multiple history entries at once"""
+    if request.method == "POST":
+        history_ids = request.POST.getlist('history_ids')
+        if history_ids:
+            deleted_count = StockHistory.objects.filter(id__in=history_ids).delete()[0]
+            messages.success(request, f"{deleted_count} history entries deleted successfully.")
+        else:
+            messages.warning(request, "No items selected for deletion.")
     return redirect('list_history')
 
 @login_required

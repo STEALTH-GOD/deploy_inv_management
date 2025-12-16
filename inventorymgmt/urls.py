@@ -13,6 +13,7 @@ urlpatterns = [
     path('reorder_level/<str:pk>/', views.reorder_level, name="reorder_level"),
     path('list_history/', views.list_history, name="list_history"),
     path('history/delete/<int:pk>/',views.delete_history,name= 'delete_history'),
+    path('history/bulk-delete/', views.bulk_delete_history, name='bulk_delete_history'),
     path('export-csv/', views.export_to_csv, name='export_to_csv'),
     
     # Sales/POS URLs
